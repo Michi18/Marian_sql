@@ -6,4 +6,5 @@ WHERE host_id in(
                 host_id
                 FROM Listings
                 GROUP BY host_id
-                HAVING COUNT(neighbourhood) > 1)
+                HAVING COUNT(longitude) > 1 or COUNT(latitude) > 1)
+GROUP BY host_id
