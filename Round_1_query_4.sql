@@ -1,5 +1,5 @@
 SELECT
-COUNT( DISTINCT host_id)
+COUNT(DISTINCT host_id)
 FROM Listings
 WHERE host_id in(
                 SELECT
@@ -11,7 +11,10 @@ WHERE host_id in(
 --
 
 SELECT
-count(host_id)
-FROM Listings
-GROUP BY host_id
-HAVING COUNT(longitude) > 1 or COUNT(latitude) > 1;
+COUNT(host_id)
+FROM (
+        SELECT host_id
+        FROM Listings
+        GROUP BY host_id
+        HAVING COUNT(longitude) > 1 or COUNT(latitude) > 1) as l
+
