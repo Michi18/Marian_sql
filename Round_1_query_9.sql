@@ -7,7 +7,7 @@ AS (
 	FROM Listings
 	WHERE 
 		city = 'Rome' and 
-		property_type = 'Entire apartment'),
+		room_type = 'Entire place'),
 CTE_NY
 AS (
 	SELECT TOP 1
@@ -17,7 +17,7 @@ AS (
 	FROM Listings
 	WHERE 
 		city = 'New York' and 
-		property_type = 'Entire apartment')
+		room_type = 'Entire place')
 SELECT
 CTE_R.p25_rome, CTE_NY.p25_newyork, ABS(CTE_R.p25_rome - CTE_NY.p25_newyork) as difference
 FROM
