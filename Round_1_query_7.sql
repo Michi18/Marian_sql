@@ -22,7 +22,6 @@ CTE_ALL,
 CTE_Listings_with_words;
 
 
-
 WITH
 CTE_Listings_with_words AS (
     SELECT
@@ -35,9 +34,9 @@ CTE_Listings_with_words AS (
     or name like '%stylish%'
     or name like '%great%')
 SELECT
-COUNT(CTE_Listings_with_words.listings_with_words) as listings_with_words,
-COUNT(listing_id) as all_listings,
-ROUND(100 * CAST(COUNT(CTE_Listings_with_words.listings_with_words) AS FLOAT) / CAST(COUNT(listing_id) AS FLOAT),2) AS percent_of_listings_with_words
+COUNT(CTE_Listings_with_words.listings_with_words) AS listings_with_words,
+COUNT(Listings.listing_id) as all_listings,
+ROUND(100 * CAST(COUNT(CTE_Listings_with_words.listings_with_words) AS FLOAT) / CAST(COUNT(Listings.listing_id) AS FLOAT),2) AS percent_of_listings_with_words
 FROM
-CTE_Listings_with_words,
-Listings
+Listings LEFT JOIN CTE_Listings_with_words
+ON CTE_Listings_with_words.listings_with_words = Listings.listing_id
