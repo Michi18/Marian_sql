@@ -32,5 +32,27 @@ RA AS(
 SELECT r.listing_id, r.AVG_1, r.AVG_2, r.AVG_3, r.AVG_4, r.AVG_5, r.AVG_6,
 (r.AVG_1 + r.AVG_2 + r.AVG_3 + r.AVG_4 + r.AVG_5 + r.AVG_6)/6 AS AVG_ALL
 FROM Listings l INNER JOIN RA r
-ON r.listing_id = l.listing_id
+ON r.listing_id = l.listing_id;
+
+
+WITH Revs AS(
+    SELECT listing_id, review_scores_accuracy as rev FROM Reviews
+    UNION ALL
+    SELECT listing_id, review_scores_cleanliness as rev FROM Reviews
+    UNION ALL
+    SELECT listing_id, review_scores_checkin as rev FROM Reviews
+    UNION ALL
+    SELECT listing_id, review_scores_communication as rev FROM Reviews
+    UNION ALL
+    SELECT listing_id, review_scores_location as rev FROM Reviews
+    UNION ALL
+    SELECT listing_id, review_scores_value as rev FROM Reviews)
+SELECT
+l.listing_id, ROUND(AVG(CAST(r.rev AS FLOAT)), 2) as avg_rev
+FROM
+Listings l INNER JOIN Revs r
+ON l.listing_id = r.listing_id
+GROUP BY l.listing_id
+
+
 
