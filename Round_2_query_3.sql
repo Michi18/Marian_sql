@@ -1,31 +1,42 @@
 WITH
-Union_revs AS
-    (SELECT listing_id, review_scores_accuracy AS rev FROM Reviews
-    UNION ALL
-    SELECT listing_id, review_scores_cleanliness AS rev FROM Reviews
-    UNION ALL
-    SELECT listing_id, review_scores_checkin AS rev FROM Reviews
-    UNION ALL
-    SELECT listing_id, review_scores_communication AS rev FROM Reviews
-    UNION ALL
-    SELECT listing_id, review_scores_location AS rev FROM Reviews
-    UNION ALL
-    SELECT listing_id, review_scores_value AS rev FROM Reviews),
-Percentiles AS
-    (SELECT r.listing_id,
-    AVG(CAST(r.review_scores_cleanliness AS FLOAT)) OVER(PARTITION BY r.listing_id) AS AVG_clean,
-    AVG(CAST(u.rev AS FLOAT)) OVER(PARTITION BY u.listing_id) as AVG_revs,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY r.review_scores_cleanliness) OVER () AS P25_clean,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY u.rev) OVER () AS P75_all
-    FROM Reviews r INNER JOIN Union_revs u
-    ON r.listing_id = u.listing_id) 
-SELECT
-COUNT(DISTINCT p.listing_id) AS all_listings,
-COUNT(DISTINCT CASE
-    WHEN p.AVG_revs > p.P75_all and p.AVG_clean < p.P25_clean
-    THEN 1 END) AS good_unclean_listings,
-ROUND(100*CAST(COUNT(DISTINCT CASE
-    WHEN p.AVG_revs > p.P75_all and p.AVG_clean < p.P25_clean
-    THEN 1 END) AS FLOAT)/
-    CAST(COUNT(DISTINCT p.listing_id) AS FLOAT), 2) AS percent_of_good_unclean
-FROM Percentiles p;
+Unpivot_revs AS
+        (SELECT listing_id, category, rev
+    FROM 
+        (SELECT listing_id,
+        review_scores_accuracy,
+        review_scores_cleanliness,
+        review_scores_checkin,
+        review_scores_communication,
+        review_scores_location,
+        review_scores_value
+        FROM Reviews) r 
+    UNPIVOT
+        (rev FOR category IN
+        (review_scores_accuracy,
+        review_scores_cleanliness,
+        review_scores_checkin,
+        review_scores_communication,
+        review_scores_location,
+        review_scores_value)
+        ) AS unpvt),
+All_reviews AS
+        (SELECT listing_id,
+        AVG(CAST(rev AS FLOAT)) OVER (PARTITION BY listing_id) AS AVG_revs,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY rev) OVER (PARTITION BY listing_id) AS P50_all
+        FROM Unpivot_revs),
+Clean_reviews AS
+        (SELECT listing_id,
+        AVG(CAST(rev AS FLOAT)) OVER (PARTITION BY listing_id) AS AVG_clean,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY rev) OVER (PARTITION BY listing_id) AS P50_clean
+        FROM Unpivot_revs
+        WHERE category = 'review_scores_cleanliness')
+SELECT COUNT(DISTINCT a.listing_id) AS All_listings,
+        COUNT(DISTINCT (CASE WHEN a.AVG_revs > a.P50_all and c.AVG_clean < c.P50_clean
+        THEN a.listing_id END)) AS good_unclean_listings,
+ROUND(100*
+        CAST(COUNT(DISTINCT (CASE WHEN a.AVG_revs > a.P50_all and c.AVG_clean < c.P50_clean
+        THEN a.listing_id END)) AS FLOAT)/
+        CAST(COUNT(DISTINCT a.listing_id) AS FLOAT), 2) AS percent_good_unclean
+FROM Clean_reviews c RIGHT JOIN All_reviews a
+ON c.listing_id = a.listing_id
+    
