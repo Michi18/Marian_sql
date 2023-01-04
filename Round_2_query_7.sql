@@ -1,15 +1,17 @@
 WITH
+Revs AS
+    (SELECT listing_id,
+    review_scores_accuracy,
+    review_scores_cleanliness,
+    review_scores_checkin,
+    review_scores_communication,
+    review_scores_location,
+    review_scores_value
+    FROM Reviews),
 Unpvt_revs AS(
     SELECT listing_id, rev
     FROM 
-        (SELECT listing_id,
-        review_scores_accuracy,
-        review_scores_cleanliness,
-        review_scores_checkin,
-        review_scores_communication,
-        review_scores_location,
-        review_scores_value
-        FROM Reviews) r 
+        Revs
     UNPIVOT
         (rev FOR category IN
         (review_scores_accuracy,
@@ -39,6 +41,6 @@ Tag AS(
     CASE WHEN AVG_revs > P75_avg THEN 'Excellent listing' END AS Excellent
     FROM Percentiles)
 SELECT listing_id,
-    CASE WHEN Clean = NULL AND Ratio = NULL AND Checkin = NULL and Excellent = NULL THEN 'Ordinary listing'
+    CASE WHEN ISNULL(Clean, 1) + ISNULL(Ratio, 1) + ISNULL(Checkin, 1) + ISNULL(Excellent, 1) = 4 THEN 'Ordinary listing'
     ELSE CONCAT_WS(', ', Clean, Ratio, Checkin, Excellent) END AS Tags
 FROM Tag
