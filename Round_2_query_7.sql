@@ -40,7 +40,8 @@ Tag AS(
     CASE WHEN AVG_checkin < P25_checkin THEN 'Difficult checkin' END AS Checkin,
     CASE WHEN AVG_revs > P75_avg THEN 'Excellent listing' END AS Excellent
     FROM Percentiles)
-SELECT listing_id,
-    CASE WHEN ISNULL(Clean, 1) + ISNULL(Ratio, 1) + ISNULL(Checkin, 1) + ISNULL(Excellent, 1) = 4 THEN 'Ordinary listing'
-    ELSE CONCAT_WS(', ', Clean, Ratio, Checkin, Excellent) END AS Tags
+SELECT DISTINCT listing_id,
+    CASE WHEN Clean IS NULL AND Ratio IS NULL AND Checkin IS NULL AND Excellent IS NULL THEN 'Ordinary listing'
+    ELSE CONCAT_WS(', ', Clean, Ratio, Checkin, Excellent)
+    END AS Tags
 FROM Tag
