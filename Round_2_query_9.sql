@@ -1,27 +1,22 @@
 WITH
 Revs AS(
-        SELECT *,
+        SELECT
+                *,
                 ROW_NUMBER() OVER (PARTITION BY listing_id ORDER BY review_id DESC) AS rn
         FROM Reviews),
-R_one AS(
+Prev_revs AS(
         SELECT 
                 listing_id,
                 review_id,
-                review_scores_value
+                rn,
+                review_scores_value AS last_review_scores_value,
+                LAG(review_scores_value, 1) OVER (PARTITION BY listing_id ORDER BY rn DESC) AS preview_review_scores_value
         FROM Revs
-        WHERE rn = 1),
-R_two AS(
-        SELECT 
-                listing_id,
-                review_id,
-                review_scores_value
-        FROM Revs
-        WHERE rn = 2)
+        WHERE rn = 1 or rn = 2)
 SELECT
-        r1.listing_id,
-        r1.review_id,
-        r2.review_id,
-        r1.review_scores_value AS last_review_scores_value,
-        r2.review_scores_value AS preview_review_scores_value
-FROM R_one r1 LEFT JOIN R_two r2
-ON r1.listing_id = r2.listing_id;
+        listing_id,
+        review_id,
+        last_review_scores_value,
+        preview_review_scores_value
+FROM Prev_revs
+WHERE rn = 1
